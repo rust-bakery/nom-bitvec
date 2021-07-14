@@ -1,18 +1,17 @@
 use nom::*;
 use bitvec::{prelude::*, slice::BitValIter};
 use nom::error::{ErrorKind, ParseError};
-use core::iter::{Copied, Enumerate};
+use core::iter::{Enumerate};
 use core::ops::{Range, RangeFrom, RangeFull, RangeTo};
 /*use crate::lib::std::slice::Iter;
 use crate::lib::std::str::from_utf8;
 use crate::lib::std::str::CharIndices;
 use crate::lib::std::str::Chars;*/
-use core::str::FromStr;
-use core::default::Default;
 
-use crate::{BSlice, BArray};
 
-impl<'a, O, T> InputLength for &'a BSlice<'a, O, T>
+use crate::{BSlice};
+
+impl<'a, O, T> InputLength for BSlice<'a, O, T>
 where
   O: BitOrder,
   T: 'a + BitStore,
@@ -33,7 +32,7 @@ where
     second.0.offset_from(&self.0) as usize
   }
 }
-
+/*
 impl<'a, O, T> Offset for &'a BSlice<'a, O, T>
 where
   O: BitOrder,
@@ -53,7 +52,7 @@ where
   fn as_bytes(&self) -> &[u8] {
     self.0.as_raw_slice()
   }
-}
+}*/
 
 impl<'a, O> AsBytes for BSlice<'a, O, u8>
 where
@@ -64,7 +63,7 @@ where
     self.0.as_raw_slice()
   }
 }
-
+/*
 macro_rules! as_bytes_array_impls {
     ($($N:expr)+) => {
       $(
@@ -87,7 +86,7 @@ macro_rules! as_bytes_array_impls {
     };
   }
   
-/*
+
 as_bytes_array_impls! {
     0  1  2  3  4  5  6  7  8  9
     10 11 12 13 14 15 16 17 18 19
@@ -96,7 +95,7 @@ as_bytes_array_impls! {
 }*/
 
 
-  impl<'a, O, T> InputIter for &'a BSlice<'a, O, T>
+  impl<'a, O, T> InputIter for BSlice<'a, O, T>
 where
   O: BitOrder,
   T: 'a + BitStore,
@@ -133,24 +132,24 @@ where
   }
 }
 
-impl<'a, O, T> InputTake for &'a BSlice<'a, O, T>
+impl<'a, O, T> InputTake for BSlice<'a, O, T>
 where
   O: BitOrder,
   T: 'a + BitStore,
 {
   #[inline]
   fn take(&self, count: usize) -> Self {
-    &BSlice(&self.0[..count])
+    BSlice(&self.0[..count])
   }
 
   #[inline]
   fn take_split(&self, count: usize) -> (Self, Self) {
     let (a, b) = self.0.split_at(count);
-    (&BSlice(b), &BSlice(a))
+    (BSlice(b), BSlice(a))
   }
 }
 
-impl<'a, O, T> InputTakeAtPosition for &'a BSlice<'a, O, T>
+impl<'a, O, T> InputTakeAtPosition for BSlice<'a, O, T>
 where
   O: BitOrder,
   T: 'a + BitStore,
@@ -167,7 +166,7 @@ where
       .position(predicate)
       .map(|i| {
           let (a, b) = self.0.split_at(i);
-          (&BSlice(a), &BSlice(b))
+          (BSlice(a), BSlice(b))
       })
       .ok_or_else(|| Err::Incomplete(Needed::new(1)))
   }
@@ -181,10 +180,13 @@ where
     P: Fn(Self::Item) -> bool,
   {
     match self.0.iter().by_val().position(predicate) {
-      Some(0) => Err(Err::Error(E::from_error_kind(self, e))),
+      Some(0) => {
+        let s = BSlice(self.0.split_at(0).1);
+        Err(Err::Error(E::from_error_kind(s, e)))
+      },
       Some(i) => Ok({
         let (a, b) = self.0.split_at(i);
-        (&BSlice(a), &BSlice(b))
+        (BSlice(a), BSlice(b))
     }),
       None => Err(Err::Incomplete(Needed::new(1))),
     }
@@ -202,9 +204,12 @@ where
       .position(|b| predicate(*b))
       .map(|i| {
         let (a, b) = self.0.split_at(i);
-        (&BSlice(a), &BSlice(b))
+        (BSlice(a), BSlice(b))
     })
-      .or_else(|| Some((self, &BSlice(BitSlice::empty()))))
+      .or_else(|| {
+        let s = BSlice(self.0.split_at(0).1);
+        Some((s, BSlice(BitSlice::empty())))
+      })
       .ok_or_else(|| unreachable!())
   }
 
@@ -217,23 +222,28 @@ where
     P: Fn(Self::Item) -> bool,
   {
     match self.0.iter().by_val().position(predicate) {
-      Some(0) => Err(Err::Error(E::from_error_kind(self, e))),
+      Some(0) => {
+        let s = BSlice(self.0.split_at(0).1);
+        Err(Err::Error(E::from_error_kind(s, e)))
+      },
       Some(i) => Ok({
         let (a, b) = self.0.split_at(i);
-        (&BSlice(a), &BSlice(b))
+        (BSlice(a), BSlice(b))
     }),
       None => {
         if self.0.is_empty() {
-          Err(Err::Error(E::from_error_kind(self, e)))
+          let s = BSlice(self.0.split_at(0).1);
+          Err(Err::Error(E::from_error_kind(s, e)))
         } else {
-          Ok((self, &BSlice(BitSlice::empty())))
+          let s = BSlice(self.0.split_at(0).1);
+          Ok((s, BSlice(BitSlice::empty())))
         }
       }
     }
   }
 }
 
-impl<'a, 'b, O1, O2, T1, T2> Compare<&'b BSlice<'b, O2, T2>> for &'a BSlice<'a, O1, T1>
+impl<'a, 'b, O1, O2, T1, T2> Compare<BSlice<'b, O2, T2>> for BSlice<'a, O1, T1>
 where
   O1: BitOrder,
   O2: BitOrder,
@@ -241,7 +251,7 @@ where
   T2: 'a + BitStore,
 {
   #[inline]
-  fn compare(&self, other: &'b BSlice<'b, O2, T2>) -> CompareResult {
+  fn compare(&self, other: BSlice<'b, O2, T2>) -> CompareResult {
     match self.0.iter().zip(other.0.iter()).position(|(a, b)| a != b) {
       Some(_) => CompareResult::Error,
       None => {
@@ -255,12 +265,12 @@ where
   }
 
   #[inline(always)]
-  fn compare_no_case(&self, other: &'b BSlice<'b, O2, T2>) -> CompareResult {
+  fn compare_no_case(&self, other: BSlice<'b, O2, T2>) -> CompareResult {
     self.compare(other)
   }
 }
 
-impl<'a, O, T> FindToken<bool> for &'a BSlice<'a, O, T>
+impl<'a, O, T> FindToken<bool> for BSlice<'a, O, T>
 where
   O: BitOrder,
   T: 'a + BitStore,
@@ -270,7 +280,7 @@ where
   }
 }
 
-impl<'a, O, T> FindToken<(usize, bool)> for &'a BSlice<'a, O, T>
+impl<'a, O, T> FindToken<(usize, bool)> for BSlice<'a, O, T>
 where
   O: BitOrder,
   T: 'a + BitStore,
@@ -280,14 +290,14 @@ where
   }
 }
 
-impl<'a, 'b, O1, O2, T1, T2> FindSubstring<&'b BSlice<'b, O2, T2>> for &'a BSlice<'a, O1, T1>
+impl<'a, 'b, O1, O2, T1, T2> FindSubstring<BSlice<'b, O2, T2>> for BSlice<'a, O1, T1>
 where
   O1: BitOrder,
   O2: BitOrder,
   T1: 'a + BitStore,
   T2: 'b + BitStore,
 {
-  fn find_substring(&self, substr: &'b BSlice<O2, T2>) -> Option<usize> {
+  fn find_substring(&self, substr: BSlice<O2, T2>) -> Option<usize> {
     if substr.0.len() > self.0.len() {
       return None;
     }
@@ -305,7 +315,7 @@ where
 macro_rules! impl_fn_slice {
   ( $ty:ty ) => {
     fn slice(&self, range: $ty) -> Self {
-      &BSlice(&self.0[range])
+      BSlice(&self.0[range])
     }
   };
 }
@@ -313,7 +323,7 @@ macro_rules! impl_fn_slice {
 
 macro_rules! slice_range_impl {
     ( BSlice, $ty:ty ) => {
-        impl<'a, O, T> Slice<$ty> for &'a BSlice<'a, O, T>
+        impl<'a, O, T> Slice<$ty> for BSlice<'a, O, T>
         where
         O: BitOrder,
         T: BitStore,
