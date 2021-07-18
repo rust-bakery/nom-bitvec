@@ -2,9 +2,14 @@
 name = "nom-bitvec"
 version = "0.1.0"
 edition = "2018"
-description = "Bit level parsing for nom"
+description = "Bit level parsing for nom with bitvec"
 license = "MIT"
-
+authors = [ "contact@geoffroycouprie.com" ]
+repository = "https://github.com/rust-bakery/nom"
+readme = "README.md"
+documentation = "https://docs.rs/nom-bitvec"
+keywords = ["parser", "parser-combinators", "bit"]
+categories = ["parsing"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
