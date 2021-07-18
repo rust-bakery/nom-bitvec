@@ -1,6 +1,6 @@
 use bitvec::{prelude::*, slice::BitValIter};
 use core::iter::Enumerate;
-use core::ops::{Range, RangeFrom, RangeFull, RangeTo};
+use core::ops::{Index, Range, RangeFrom, RangeFull, RangeTo};
 use nom::error::{ErrorKind, ParseError};
 use nom::*;
 /*use crate::lib::std::slice::Iter;
@@ -11,6 +11,17 @@ use crate::lib::std::str::Chars;*/
 use crate::BSlice;
 
 impl<'a, O, T> InputLength for BSlice<'a, O, T>
+where
+    O: BitOrder,
+    T: 'a + BitStore,
+{
+    #[inline]
+    fn input_len(&self) -> usize {
+        self.0.len()
+    }
+}
+
+impl<'a, 'b, O, T> InputLength for &'b BSlice<'a, O, T>
 where
     O: BitOrder,
     T: 'a + BitStore,
@@ -125,6 +136,25 @@ where
         (BSlice(b), BSlice(a))
     }
 }
+
+/*
+impl<'a, 'b, O, T> InputTake for &'b BSlice<'a, O, T>
+where
+    O: BitOrder,
+    T: 'a + BitStore,
+{
+    #[inline]
+    fn take(&self, count: usize) -> Self {
+        &BSlice(&self.0[..count])
+    }
+
+    #[inline]
+    fn take_split(&self, count: usize) -> (Self, Self) {
+        let (a, b) = self.0.split_at(count);
+        (&BSlice(b), &BSlice(a))
+    }
+}
+*/
 
 impl<'a, O, T> InputTakeAtPosition for BSlice<'a, O, T>
 where
@@ -339,3 +369,28 @@ where
         acc.extend(self.0.iter());
     }
 }
+
+impl<'a, O, T> Index<usize> for BSlice<'a, O, T>
+where
+    O: BitOrder,
+    T: BitStore,
+{
+    type Output = bool;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.0[index]
+    }
+}
+
+/*
+impl<'a, O, T> Index<RangeFrom<usize>> for BSlice<'a, O, T>
+where
+    O: BitOrder,
+    T: BitStore,
+{
+    type Output = Self;
+
+    fn index(&self, index: RangeFrom<usize>) -> &Self::Output {
+        &BSlice(&self.0[index])
+    }
+}*/
