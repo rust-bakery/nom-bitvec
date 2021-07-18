@@ -32,27 +32,6 @@ where
     second.0.offset_from(&self.0) as usize
   }
 }
-/*
-impl<'a, O, T> Offset for &'a BSlice<'a, O, T>
-where
-  O: BitOrder,
-  T: 'a + BitStore,
-{
-  #[inline(always)]
-  fn offset(&self, second: &Self) -> usize {
-    second.0.offset_from(&self.0) as usize
-  }
-}
-
-impl<'a, O> AsBytes for &'a BSlice<'a, O, u8>
-where
-  O: BitOrder,
-{
-  #[inline(always)]
-  fn as_bytes(&self) -> &[u8] {
-    self.0.as_raw_slice()
-  }
-}*/
 
 impl<'a, O> AsBytes for BSlice<'a, O, u8>
 where
@@ -341,11 +320,11 @@ macro_rules! slice_ranges_impl {
         slice_range_impl! {BSlice, RangeFull}
     };
 }
-  
+
 slice_ranges_impl! {BSlice}
-  
+
 #[cfg(feature = "alloc")]
-impl<O, T> ExtendInto for BSlice<O, T>
+impl<'a, O, T> ExtendInto for BSlice<'a, O, T>
 where
   O: BitOrder,
   T: BitStore,
@@ -360,26 +339,7 @@ where
 
   #[inline]
   fn extend_into(&self, acc: &mut Self::Extender) {
-    acc.extend(self.iter());
+    acc.extend(self.0.iter());
   }
 }
 
-#[cfg(feature = "alloc")]
-impl<'a, O, T> ExtendInto for &'a BSlice<O, T>
-where
-  O: BitOrder,
-  T: 'a + BitStore,
-{
-  type Item = bool;
-  type Extender = BitVec<O, T>;
-
-  #[inline]
-  fn new_builder(&self) -> BitVec<O, T> {
-    BitVec::new()
-  }
-
-  #[inline]
-  fn extend_into(&self, acc: &mut Self::Extender) {
-    acc.extend(self.iter());
-  }
-}
