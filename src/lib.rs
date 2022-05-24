@@ -20,5 +20,5 @@ mod input;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[repr(transparent)]
-pub struct BSlice<'a, O: BitOrder, T: BitStore>(pub &'a BitSlice<O, T>);
-pub struct BArray<O: BitOrder, T: BitStore>(pub BitArray<O, T>);
+pub struct BSlice<'a, T: BitStore, O: BitOrder>(pub &'a BitSlice<T, O>);
+pub struct BArray<T: BitStore, O: BitOrder>(pub BitArray<T, O>);
