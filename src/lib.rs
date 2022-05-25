@@ -22,3 +22,15 @@ mod input;
 #[repr(transparent)]
 pub struct BSlice<'a, T: BitStore, O: BitOrder>(pub &'a BitSlice<T, O>);
 pub struct BArray<T: BitStore, O: BitOrder>(pub BitArray<T, O>);
+
+impl<'a, T: BitStore, O: BitOrder> From<&'a BitSlice<T, O>> for BSlice<'a, T, O> {
+    fn from(slice: &'a BitSlice<T, O>) -> Self {
+        Self(slice)
+    }
+}
+
+impl<T: BitStore, O: BitOrder> From<BitArray<T, O>> for BArray<T, O> {
+    fn from(slice: BitArray<T, O>) -> Self {
+        Self(slice)
+    }
+}
