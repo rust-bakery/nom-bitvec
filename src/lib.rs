@@ -33,8 +33,36 @@ impl<'a, T: BitStore, O: BitOrder> From<&'a BitSlice<T, O>> for BSlice<'a, T, O>
     }
 }
 
+impl<'a, T: BitStore, O: BitOrder> From<BSlice<'a, T, O>> for &'a BitSlice<T, O> {
+    fn from(slice: BSlice<'a, T, O>) -> Self {
+        slice.0
+    }
+}
+
+impl<'a, T: BitStore, O: BitOrder> core::ops::Deref for BSlice<'_, T, O> {
+    type Target = BitSlice<T, O>;
+
+    fn deref(&self) -> &Self::Target {
+        self.0
+    }
+}
+
 impl<T: BitStore, O: BitOrder> From<BitArray<T, O>> for BArray<T, O> {
     fn from(slice: BitArray<T, O>) -> Self {
         Self(slice)
+    }
+}
+
+impl<T: BitStore, O: BitOrder> From<BArray<T, O>> for BitArray<T, O> {
+    fn from(slice: BArray<T, O>) -> Self {
+        slice.0
+    }
+}
+
+impl<'a, T: BitStore, O: BitOrder> core::ops::Deref for BArray<T, O> {
+    type Target = BitArray<T, O>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
