@@ -81,7 +81,7 @@ where
 {
     type Item = bool;
     type Iter = Enumerate<Self::IterElem>;
-    type IterElem = Box<dyn Iterator<Item = bool> + 'a>;
+    type IterElem = alloc::boxed::Box<dyn Iterator<Item = bool> + 'a>;
 
     #[inline]
     fn iter_indices(&self) -> Self::Iter {
@@ -90,7 +90,7 @@ where
 
     #[inline]
     fn iter_elements(&self) -> Self::IterElem {
-        Box::from(self.0.iter().by_vals())
+        alloc::boxed::Box::from(self.0.iter().by_vals())
     }
 
     #[inline]

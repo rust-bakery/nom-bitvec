@@ -14,6 +14,10 @@
 //!
 //! assert_eq!(parser(bits), Ok((&bits[..4], &bits[4..])));
 //! ```
+#![no_std]
+
+extern crate alloc;
+
 use bitvec::prelude::*;
 
 mod input;
