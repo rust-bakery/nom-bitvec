@@ -8,7 +8,7 @@
 //! let data = [0xA5u8, 0x69, 0xF0, 0xC3];
 //! let bits = data.view_bits::<Msb0>();
 //!
-//! fn parser(bits: &BitSlice<Msb0, u8>) -> IResult<&BitSlice<Msb0, u8>, &BitSlice<Msb0, u8>> {
+//! fn parser(bits: &BitSlice<u8, Msb0>) -> IResult<&BitSlice<u8, Msb0>, &BitSlice<u8, Msb0>> {
 //!   tag(bits![1, 0, 1, 0])(bits)
 //! }
 //!
@@ -20,5 +20,5 @@ mod input;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[repr(transparent)]
-pub struct BSlice<'a, O: BitOrder, T: BitStore>(pub &'a BitSlice<O, T>);
-pub struct BArray<O: BitOrder, T: BitStore>(pub BitArray<O, T>);
+pub struct BSlice<'a, T: BitStore, O: BitOrder>(pub &'a BitSlice<T, O>);
+pub struct BArray<T: BitStore, O: BitOrder>(pub BitArray<T, O>);
