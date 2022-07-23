@@ -10,10 +10,10 @@ use crate::lib::std::str::Chars;*/
 
 use crate::BSlice;
 
-impl<'a, O, T> InputLength for BSlice<'a, O, T>
+impl<'a, T, O> InputLength for BSlice<'a, T, O>
 where
-    O: BitOrder,
     T: 'a + BitStore,
+    O: BitOrder,
 {
     #[inline]
     fn input_len(&self) -> usize {
@@ -21,10 +21,10 @@ where
     }
 }
 
-impl<'a, 'b, O, T> InputLength for &'b BSlice<'a, O, T>
+impl<'a, 'b, T, O> InputLength for &'b BSlice<'a, T, O>
 where
-    O: BitOrder,
     T: 'a + BitStore,
+    O: BitOrder,
 {
     #[inline]
     fn input_len(&self) -> usize {
@@ -32,24 +32,29 @@ where
     }
 }
 
-impl<'a, O, T> Offset for BSlice<'a, O, T>
+impl<'a, T, O> Offset for BSlice<'a, T, O>
 where
-    O: BitOrder,
     T: BitStore,
+    O: BitOrder,
 {
     #[inline(always)]
     fn offset(&self, second: &Self) -> usize {
-        second.0.offset_from(&self.0) as usize
+        unsafe { second.0.as_bitptr().offset_from(self.0.as_bitptr()) as usize }
     }
 }
 
-impl<'a, O> AsBytes for BSlice<'a, O, u8>
+impl<'a, O> AsBytes for BSlice<'a, u8, O>
 where
     O: BitOrder,
 {
     #[inline(always)]
     fn as_bytes(&self) -> &[u8] {
-        self.0.as_raw_slice()
+        let domain = self.0.domain();
+        let region = domain
+            .region()
+            .expect("expected memory region from bit slice");
+
+        region.1
     }
 }
 /*
@@ -83,14 +88,14 @@ as_bytes_array_impls! {
     30 31 32
 }*/
 
-impl<'a, O, T> InputIter for BSlice<'a, O, T>
+impl<'a, T, O> InputIter for BSlice<'a, T, O>
 where
-    O: BitOrder,
     T: 'a + BitStore,
+    O: BitOrder,
 {
     type Item = bool;
     type Iter = Enumerate<Self::IterElem>;
-    type IterElem = BitValIter<'a, O, T>;
+    type IterElem = BitValIter<'a, T, O>;
 
     #[inline]
     fn iter_indices(&self) -> Self::Iter {
@@ -99,7 +104,7 @@ where
 
     #[inline]
     fn iter_elements(&self) -> Self::IterElem {
-        self.0.iter().by_val()
+        self.0.iter().by_vals()
     }
 
     #[inline]
@@ -120,10 +125,10 @@ where
     }
 }
 
-impl<'a, O, T> InputTake for BSlice<'a, O, T>
+impl<'a, T, O> InputTake for BSlice<'a, T, O>
 where
-    O: BitOrder,
     T: 'a + BitStore,
+    O: BitOrder,
 {
     #[inline]
     fn take(&self, count: usize) -> Self {
@@ -138,10 +143,10 @@ where
 }
 
 /*
-impl<'a, 'b, O, T> InputTake for &'b BSlice<'a, O, T>
+impl<'a, 'b, T, O> InputTake for &'b BSlice<'a, T, O>
 where
-    O: BitOrder,
     T: 'a + BitStore,
+    O: BitOrder,
 {
     #[inline]
     fn take(&self, count: usize) -> Self {
@@ -156,10 +161,10 @@ where
 }
 */
 
-impl<'a, O, T> InputTakeAtPosition for BSlice<'a, O, T>
+impl<'a, T, O> InputTakeAtPosition for BSlice<'a, T, O>
 where
-    O: BitOrder,
     T: 'a + BitStore,
+    O: BitOrder,
 {
     type Item = bool;
 
@@ -169,7 +174,7 @@ where
     {
         self.0
             .iter()
-            .by_val()
+            .by_vals()
             .position(predicate)
             .map(|i| {
                 let (a, b) = self.0.split_at(i);
@@ -186,7 +191,7 @@ where
     where
         P: Fn(Self::Item) -> bool,
     {
-        match self.0.iter().by_val().position(predicate) {
+        match self.0.iter().by_vals().position(predicate) {
             Some(0) => {
                 let s = BSlice(self.0.split_at(0).1);
                 Err(Err::Error(E::from_error_kind(s, e)))
@@ -228,7 +233,7 @@ where
     where
         P: Fn(Self::Item) -> bool,
     {
-        match self.0.iter().by_val().position(predicate) {
+        match self.0.iter().by_vals().position(predicate) {
             Some(0) => {
                 let s = BSlice(self.0.split_at(0).1);
                 Err(Err::Error(E::from_error_kind(s, e)))
@@ -250,15 +255,15 @@ where
     }
 }
 
-impl<'a, 'b, O1, O2, T1, T2> Compare<BSlice<'b, O2, T2>> for BSlice<'a, O1, T1>
+impl<'a, 'b, T1, T2, O1, O2> Compare<BSlice<'b, T2, O2>> for BSlice<'a, T1, O1>
 where
-    O1: BitOrder,
-    O2: BitOrder,
     T1: 'a + BitStore,
     T2: 'a + BitStore,
+    O1: BitOrder,
+    O2: BitOrder,
 {
     #[inline]
-    fn compare(&self, other: BSlice<'b, O2, T2>) -> CompareResult {
+    fn compare(&self, other: BSlice<'b, T2, O2>) -> CompareResult {
         match self.0.iter().zip(other.0.iter()).position(|(a, b)| a != b) {
             Some(_) => CompareResult::Error,
             None => {
@@ -272,39 +277,39 @@ where
     }
 
     #[inline(always)]
-    fn compare_no_case(&self, other: BSlice<'b, O2, T2>) -> CompareResult {
+    fn compare_no_case(&self, other: BSlice<'b, T2, O2>) -> CompareResult {
         self.compare(other)
     }
 }
 
-impl<'a, O, T> FindToken<bool> for BSlice<'a, O, T>
+impl<'a, T, O> FindToken<bool> for BSlice<'a, T, O>
 where
-    O: BitOrder,
     T: 'a + BitStore,
+    O: BitOrder,
 {
     fn find_token(&self, token: bool) -> bool {
-        self.0.iter().by_val().any(|i| i == token)
+        self.0.iter().by_vals().any(|i| i == token)
     }
 }
 
-impl<'a, O, T> FindToken<(usize, bool)> for BSlice<'a, O, T>
+impl<'a, T, O> FindToken<(usize, bool)> for BSlice<'a, T, O>
 where
-    O: BitOrder,
     T: 'a + BitStore,
+    O: BitOrder,
 {
     fn find_token(&self, token: (usize, bool)) -> bool {
-        self.0.iter().by_val().enumerate().any(|i| i == token)
+        self.0.iter().by_vals().enumerate().any(|i| i == token)
     }
 }
 
-impl<'a, 'b, O1, O2, T1, T2> FindSubstring<BSlice<'b, O2, T2>> for BSlice<'a, O1, T1>
+impl<'a, 'b, T1, T2, O1, O2> FindSubstring<BSlice<'b, T2, O2>> for BSlice<'a, T1, O1>
 where
-    O1: BitOrder,
-    O2: BitOrder,
     T1: 'a + BitStore,
     T2: 'b + BitStore,
+    O1: BitOrder,
+    O2: BitOrder,
 {
-    fn find_substring(&self, substr: BSlice<O2, T2>) -> Option<usize> {
+    fn find_substring(&self, substr: BSlice<T2, O2>) -> Option<usize> {
         if substr.0.len() > self.0.len() {
             return None;
         }
@@ -329,7 +334,7 @@ macro_rules! impl_fn_slice {
 
 macro_rules! slice_range_impl {
     ( BSlice, $ty:ty ) => {
-        impl<'a, O, T> Slice<$ty> for BSlice<'a, O, T>
+        impl<'a, T, O> Slice<$ty> for BSlice<'a, T, O>
         where
             O: BitOrder,
             T: BitStore,
@@ -351,16 +356,16 @@ macro_rules! slice_ranges_impl {
 slice_ranges_impl! {BSlice}
 
 #[cfg(feature = "alloc")]
-impl<'a, O, T> ExtendInto for BSlice<'a, O, T>
+impl<'a, T, O> ExtendInto for BSlice<'a, T, O>
 where
-    O: BitOrder,
     T: BitStore,
+    O: BitOrder,
 {
     type Item = bool;
-    type Extender = BitVec<O, T>;
+    type Extender = BitVec<T, O>;
 
     #[inline]
-    fn new_builder(&self) -> BitVec<O, T> {
+    fn new_builder(&self) -> BitVec<T, O> {
         BitVec::new()
     }
 
@@ -370,10 +375,10 @@ where
     }
 }
 
-impl<'a, O, T> Index<usize> for BSlice<'a, O, T>
+impl<'a, T, O> Index<usize> for BSlice<'a, T, O>
 where
-    O: BitOrder,
     T: BitStore,
+    O: BitOrder,
 {
     type Output = bool;
 
@@ -383,10 +388,10 @@ where
 }
 
 /*
-impl<'a, O, T> Index<RangeFrom<usize>> for BSlice<'a, O, T>
+impl<'a, T, O> Index<RangeFrom<usize>> for BSlice<'a, T, O>
 where
-    O: BitOrder,
     T: BitStore,
+    O: BitOrder,
 {
     type Output = Self;
 
