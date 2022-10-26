@@ -1,5 +1,5 @@
 [package]
-name = "nom-bitvec"
+name = "bitvec-nom"
 version = "0.2.0"
 edition = "2018"
 description = "Bit level parsing for nom with bitvec"
