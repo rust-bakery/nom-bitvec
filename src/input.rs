@@ -43,6 +43,21 @@ where
     }
 }
 
+impl<'a, O> AsBytes for BSlice<'a, u8, O>
+where
+    O: BitOrder,
+{
+    #[inline(always)]
+    fn as_bytes(&self) -> &[u8] {
+        let domain = self.0.domain();
+        let region = domain
+            .region()
+            .expect("expected memory region from bit slice");
+
+        region.1
+    }
+}
+
 /*
 macro_rules! as_bytes_array_impls {
     ($($N:expr)+) => {
