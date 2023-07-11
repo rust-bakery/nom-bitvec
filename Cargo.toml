@@ -1,5 +1,5 @@
 [package]
-name = "nom-bitvec"
+name = "bitvec-nom2"
 version = "0.2.0"
 edition = "2018"
 description = "Bit level parsing for nom with bitvec"
@@ -13,7 +13,7 @@ categories = ["parsing"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bitvec = "0.22.3"
+bitvec = "1"
 nom = { version = "7.0.0", default-features = false }
 
 [features]
